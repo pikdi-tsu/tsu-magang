@@ -1,0 +1,31 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('mitra', function (Blueprint $table) {
+            $table->char('id_mitra', 8)->primary();
+            $table->string('nama_mitra', 100);
+            $table->string('alamat', 255)->nullable();
+            $table->string('kontak', 20)->nullable();
+            $table->string('gambar',50)->nullable();
+            $table->timestamps();
+    });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        //
+    }
+};

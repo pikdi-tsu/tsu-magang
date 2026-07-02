@@ -1,0 +1,108 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Jetstream\HasProfilePhoto;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    use HasApiTokens;
+    use HasFactory;
+    use HasProfilePhoto;
+    use Notifiable;
+    use TwoFactorAuthenticatable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'role',
+        'prodi',
+        'name',     // default Jetstream field
+        'email',
+        'password',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+        'two_factor_recovery_codes',
+        'two_factor_secret',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'profile_photo_url',
+    ];
+
+    // relasi untuk pengambilan informasi (nim) di profile
+    public function mahasiswa()
+        {
+            return $this->hasOne(Mahasiswa::class);
+        }
+
+    public function dosen()
+        {
+            return $this->hasOne(Dosen::class);
+        }
+
+    // public function getDisplayIdentityAttribute()
+    //     {
+    //         if ($this->role === 'mahasiswa') {
+    //             return $this->mahasiswa?->nim;
+    //         }
+
+    //         return ucfirst($this->role);
+    //     }
+
+        public function getIdentityLabelAttribute()
+        {
+            return match ($this->role) {
+                'dosen' => 'NUPTK',
+                'mahasiswa' => 'NIM',
+                'admin' => 'Role',
+                default => 'Identitas',
+            };
+        }
+
+        public function getIdentityValueAttribute()
+        {
+            return match ($this->role) {
+                'dosen' => $this->dosen?->nuptk,
+                'mahasiswa' => $this->mahasiswa?->nim,
+                'admin' => 'ADMIN',
+                default => '-',
+            };
+        }
+
+        public function berkas()
+        {
+            return $this->hasOne(BerkasMahasiswa::class,'user_id', 'id');
+        }
+
+}
