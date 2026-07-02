@@ -207,8 +207,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/pengumuman', [PengumumanController::class, 'store'])->name('admin.pengumuman.store');
     Route::put('/admin/pengumuman/{id}', [PengumumanController::class, 'update'])->name('admin.pengumuman.update');
     Route::delete('/admin/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('admin.pengumuman.destroy');
-    Route::get('/konversi', [\App\Http\Controllers\Admin\AdminKonversiController::class, 'index'])->name('admin.konversi.index');
-    Route::post('/admin/konversi/{nim}/validasi', [\App\Http\Controllers\Admin\AdminKonversiController::class, 'validasi'])->name('admin.konversi.validasi');
 });
 
 
