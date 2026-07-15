@@ -23,7 +23,11 @@ class RedirectIfAuthenticated
             if (Auth::guard($guard)->check()) {
                 $user = Auth::guard($guard)->user();
                 $url = match ($user->role) {
-                    'admin' => route('admin.pengumuman.index', absolute: false),
+                    // 'admin' => route('admin.pengumuman.index', absolute: false),
+                    'admin_universitas' => route('admin.pengumuman.index', absolute: false),
+                    'admin_prodi' => route('admin.pengumuman.index', absolute: false),
+                    'super_fakultas' => route('admin.pengumuman.index', absolute: false),
+                    'admin_super' => route('admin.pengumuman.index', absolute: false),
                     'dosen' => route('dosen.dashboard', absolute: false),
                     default => route('mahasiswa.dashboard', absolute: false),
                 };

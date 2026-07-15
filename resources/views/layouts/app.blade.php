@@ -10,7 +10,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'Dashboard Magang TSU')</title>
-    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -143,10 +142,12 @@
 
             $isMahasiswa = $role === 'mahasiswa';
             $isDosen = $role === 'dosen';
-            $isAdmin = $role === 'admin';
+            $isAdminSuper = $role === 'admin_super';
             $isAdminUniversitas = $role === 'admin_universitas';
+            $isAdminFakultas = $role === 'admin_fakultas';
             $isAdminProdi = $role === 'admin_prodi';
-            $isAnyAdmin = $isAdmin || $isAdminUniversitas || $isAdminProdi;
+            $isAdminFU = $isAdminFakultas || $isAdminUniversitas || $isAdminSuper;
+            $isAnyAdmin = $isAdminSuper || $isAdminUniversitas || $isAdminFakultas || $isAdminProdi || $role === 'admin';
 
             $activeClass = 'bg-[#074755] text-white shadow-md';
             $inactiveClass = 'bg-white text-black hover:bg-gray-100 transition shadow-sm';
@@ -238,8 +239,8 @@
             @endif
 
             @if($isAnyAdmin)
-                <a href="{{ route('admin.dashboard') }}"
-                    class="flex items-center gap-3 px-6 py-3 rounded-full font-bold {{ request()->routeIs('admin.dashboard') ? $activeClass : $inactiveClass }}">
+                <a href="{{ route('admin.pengumuman.index') }}"
+                    class="flex items-center gap-3 px-6 py-3 rounded-full font-bold {{ request()->routeIs('admin.pengumuman*') ? $activeClass : $inactiveClass }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -248,7 +249,17 @@
                     Pengumuman
                 </a>
 
-                @if($isAdmin)
+                <a href="{{ route('admin.pendaftaran.index') }}"
+                    class="flex items-center gap-3 px-6 py-3 rounded-full font-bold {{ request()->routeIs('admin.pendaftaran*') ? $activeClass : $inactiveClass }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    ACC Pendaftaran
+                </a>
+
+                @if($isAdminFU)
                     <a href="{{ route('admin.program.index') }}"
                         class="flex items-center gap-3 px-6 py-3 rounded-full font-bold {{ request()->routeIs('admin.program*') ? $activeClass : $inactiveClass }}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
@@ -257,15 +268,6 @@
                                 d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
                         Kelola Program
-                    </a>
-                    <a href="{{ route('admin.pendaftaran.index') }}"
-                        class="flex items-center gap-3 px-6 py-3 rounded-full font-bold {{ request()->routeIs('admin.pendaftaran*') ? $activeClass : $inactiveClass }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        ACC Pendaftaran
                     </a>
 
                     <a href="{{ route('admin.konversi.index') }}"
@@ -277,6 +279,17 @@
                         </svg>
                         Validasi Konversi
                     </a>
+                    @if($isAdminSuper)
+                        <a href="{{ route('admin.user.index') }}"
+                            class="flex items-center gap-3 px-6 py-3 rounded-full font-bold {{ request()->routeIs('admin.user*') ? $activeClass : $inactiveClass }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Kelola User
+                        </a>
+                    @endif
                 @endif
 
                 <a href="{{ route('admin.mahasiswa.index', $isAdminUniversitas ? ['role' => 'universitas'] : []) }}"
@@ -288,6 +301,8 @@
                     </svg>
                     Data Mahasiswa
                 </a>
+
+
             @endif
         </nav>
     </aside>

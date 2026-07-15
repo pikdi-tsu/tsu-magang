@@ -120,12 +120,12 @@
                                 </td>
                                 <td class="px-6 py-4 text-center">
                                     <div class="flex justify-center gap-2">
-                                        <button onclick="previewFile('CV', '{{ addslashes($mhs->name) }}')"
-                                            class="w-8 h-8 flex items-center justify-center bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition">📄</button>
-                                        <button onclick="previewFile('KRS', '{{ addslashes($mhs->name) }}')"
-                                            class="w-8 h-8 flex items-center justify-center bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition">📋</button>
-                                        <button onclick="previewFile('Transkrip', '{{ addslashes($mhs->name) }}')"
-                                            class="w-8 h-8 flex items-center justify-center bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition">📊</button>
+                                        <button onclick="previewFile('CV', '{{ addslashes($mhs->name) }}', '{{ $mhs->berkas && $mhs->berkas->cv_file ? asset('storage/' . $mhs->berkas->cv_file) : '' }}')"
+                                            class="w-8 h-8 flex items-center justify-center bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition" title="Lihat CV">📄</button>
+                                        <button onclick="previewFile('KRS', '{{ addslashes($mhs->name) }}', '{{ $mhs->berkas && $mhs->berkas->krs_file ? asset('storage/' . $mhs->berkas->krs_file) : '' }}')"
+                                            class="w-8 h-8 flex items-center justify-center bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition" title="Lihat KRS">📋</button>
+                                        <button onclick="previewFile('Transkrip', '{{ addslashes($mhs->name) }}', '{{ $mhs->berkas && $mhs->berkas->transkrip_file ? asset('storage/' . $mhs->berkas->transkrip_file) : '' }}')"
+                                            class="w-8 h-8 flex items-center justify-center bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition" title="Lihat Transkrip">📊</button>
                                     </div>
                                 </td>
                             </tr>
@@ -233,8 +233,7 @@
                     confirmButtonColor: '#086375',
                 });
 
-                // Arahne ke route backendmu lukk
-                // window.location.href = `/mahasiswa/export?fakultas=${fakultas}&prodi=${prodi}`;
+                window.location.href = `/admin/mahasiswa/export?fakultas=${fakultas}&prodi=${prodi}`;
             });
         }
 
@@ -262,14 +261,18 @@
             });
         }
 
-        function previewFile(type, mhs) {
-            Swal.fire({
-                title: 'Membuka ' + type,
-                text: 'Menghubungkan ke server untuk file ' + mhs + '...',
-                icon: 'info',
-                timer: 1000,
-                showConfirmButton: false
-            });
+        function previewFile(type, mhs, url) {
+            if (!url) {
+                Swal.fire({
+                    title: 'Berkas Tidak Tersedia',
+                    text: 'Mahasiswa ' + mhs + ' belum mengunggah ' + type + '.',
+                    icon: 'warning',
+                    confirmButtonColor: '#086375'
+                });
+                return;
+            }
+            // Buka file di tab baru
+            window.open(url, '_blank');
         }
 
         window.onload = updateStudentCount;

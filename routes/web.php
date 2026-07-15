@@ -20,7 +20,7 @@ use App\Http\Controllers\Admin\ProgramController;
 use App\Http\Controllers\MataKuliahController;
 use App\Http\Controllers\MahasiswaPenilaianController;
 use App\Http\Controllers\Admin\PendaftaranController as AdminPendaftaranController;
-
+use App\Http\Controllers\Admin\UserController;
 
 use App\Models\Pengumuman;
 
@@ -31,6 +31,7 @@ Route::get('/whoami', function () {
         'name' => auth()->user()?->name,
         'email' => auth()->user()?->email,
         'role' => auth()->user()?->role,
+        'prodi' => auth()->user()?->prodi,
     ]);
 })->middleware('auth');
 
@@ -176,22 +177,29 @@ Route::middleware(['auth', 'role:dosen'])->group(function () {
 // ===================
 // ROUTE ADMIN (SEMUA ADMIN)
 // ===================
-Route::middleware(['auth', 'role:admin|admin_universitas|admin_prodi'])->group(function () {
+Route::middleware(['auth', 'role:admin_universitas|admin_fakultas|admin_prodi|admin_super'])->group(function () {
 
     Route::get('/admin/dashboard', [App\Http\Controllers\Admin\AdminDashboardController::class, 'index'])
         ->name('admin.dashboard');
 
     Route::get('/admin/mahasiswa', [DataMahasiswaController::class, 'index'])
         ->name('admin.mahasiswa.index');
+    Route::get('/admin/mahasiswa/export', [DataMahasiswaController::class, 'export'])
+        ->name('admin.mahasiswa.export');
     Route::get('/konversi', [\App\Http\Controllers\Admin\AdminKonversiController::class, 'index'])->name('admin.konversi.index');
     Route::post('/admin/konversi/{nim}/validasi', [\App\Http\Controllers\Admin\AdminKonversiController::class, 'validasi'])->name('admin.konversi.validasi');
+
+    Route::get('/admin/pengumuman', [PengumumanController::class, 'index'])->name('admin.pengumuman.index');
+    Route::post('/admin/pengumuman', [PengumumanController::class, 'store'])->name('admin.pengumuman.store');
+    Route::put('/admin/pengumuman/{id}', [PengumumanController::class, 'update'])->name('admin.pengumuman.update');
+    Route::delete('/admin/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('admin.pengumuman.destroy');
 });
 
 
 // ===================
-// ROUTE ADMIN FULL (ADMIN FAKULTAS)
+// ROUTE ADMIN FULL (ADMIN FAKULTAS, ADMIN PRODI, ADMIN SUPER, ADMIN UNIVERSITAS)
 // ===================
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware(['auth', 'role:admin_prodi|admin_fakultas|admin_super|admin_universitas'])->group(function () {
 
     Route::get('/admin/program', [ProgramController::class, 'index'])->name('admin.program.index');
     Route::get('/admin/program/{id}', [ProgramController::class, 'show'])->name('admin.program.show');
@@ -203,10 +211,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::put('/admin/pendaftaran/{id}', [AdminPendaftaranController::class, 'update'])->name('admin.pendaftaran.update');
     Route::put('/admin/pendaftaran/{id}/assign-dospem', [AdminPendaftaranController::class, 'assignDospem'])->name('admin.pendaftaran.assignDospem');
 
-    Route::get('/admin/pengumuman', [PengumumanController::class, 'index'])->name('admin.pengumuman.index');
-    Route::post('/admin/pengumuman', [PengumumanController::class, 'store'])->name('admin.pengumuman.store');
-    Route::put('/admin/pengumuman/{id}', [PengumumanController::class, 'update'])->name('admin.pengumuman.update');
-    Route::delete('/admin/pengumuman/{id}', [PengumumanController::class, 'destroy'])->name('admin.pengumuman.destroy');
+    Route::get('/konversi', [\App\Http\Controllers\Admin\AdminKonversiController::class, 'index'])->name('admin.konversi.index');
+    Route::post('/admin/konversi/{nim}/validasi', [\App\Http\Controllers\Admin\AdminKonversiController::class, 'validasi'])->name('admin.konversi.validasi');
+
+    Route::get('/admin/user', [UserController::class, 'index'])->name('admin.user.index');
+    Route::post('/admin/user', [UserController::class, 'store'])->name('admin.user.store');
+    Route::put('/admin/user/{id}', [UserController::class, 'update'])->name('admin.user.update');
+    Route::delete('/admin/user/{id}', [UserController::class, 'destroy'])->name('admin.user.destroy');
 });
 
 
