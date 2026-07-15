@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
                 'name' => 'PIKDI',
                 'email' => 'pikdi@tsu.ac.id',
                 'password' => Hash::make('PIKDImagang@TSU25'),
-                'role' => 'admin',
+                'role' => 'admin_super',
             ]);
             $this->command->info('PIKDI user created successfully.');
         } else {

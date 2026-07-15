@@ -20,7 +20,7 @@ class PengumumanController extends Controller
         $request->validate([
             'judul' => 'required|string|max:255',
             'isi' => 'required|string',
-            'jenis_pengumuman' => 'required|in:info,warning,danger,success',
+            'jenis_pengumuman' => 'required|in:informasi,himbauan,deadline,kegiatan',
             'status' => 'nullable|in:aktif,nonaktif',
         ]);
 
@@ -46,7 +46,7 @@ class PengumumanController extends Controller
         $request->validate([
             'judul' => 'required',
             'isi' => 'required',
-            'jenis_pengumuman' => 'required|in:info,warning,danger,success',
+            'jenis_pengumuman' => 'required|in:informasi,himbauan,deadline,kegiatan',
             'status' => 'required|in:aktif,nonaktif'
         ]);
 
