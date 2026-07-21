@@ -4,9 +4,9 @@
 @section('header_title', 'Database User')
 
 @section('content')
-    <div class="space-y-6" x-data="{ 
-                        addModal: false, 
-                        editModal: false, 
+    <div class="space-y-6" x-data="{
+                        addModal: false,
+                        editModal: false,
                         newRole: 'admin_super',
                         editData: { id: '', name: '', email: '', role: '', nim: '', nuptk: '', prodi: '' },
                         openEdit(user) {

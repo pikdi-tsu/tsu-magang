@@ -25,7 +25,7 @@ class DataMahasiswaController extends Controller
         if ($request->has('fakultas') && $request->fakultas != '') {
              $fakultas = $request->fakultas;
              $prodiList = [];
-             
+
              // Map Fakultas to Prodi
              if ($fakultas == 'FTI') {
                  $prodiList = ['Informatika', 'Sistem Informasi', 'Teknik Komputer', 'Rekayasa Perangkat Lunak'];
@@ -34,7 +34,7 @@ class DataMahasiswaController extends Controller
              } elseif ($fakultas == 'FK') {
                  // Add FK prodis if any
              }
-             
+
              if (!empty($prodiList)) {
                  $query->whereHas('mahasiswa', function($q) use ($prodiList) {
                      $q->whereIn('prodi', $prodiList);
@@ -81,7 +81,7 @@ class DataMahasiswaController extends Controller
         if ($request->has('fakultas') && $request->fakultas != '' && $request->fakultas != 'Semua') {
              $fakultas = $request->fakultas;
              $prodiList = [];
-             
+
              if ($fakultas == 'FTI') {
                  $prodiList = ['Informatika', 'Sistem Informasi', 'Teknik Komputer', 'Rekayasa Perangkat Lunak'];
              } elseif ($fakultas == 'FEB') {
@@ -89,7 +89,7 @@ class DataMahasiswaController extends Controller
              } elseif ($fakultas == 'FK') {
                  // Add FK prodis if any
              }
-             
+
              if (!empty($prodiList)) {
                  $query->whereHas('mahasiswa', function($q) use ($prodiList) {
                      $q->whereIn('prodi', $prodiList);

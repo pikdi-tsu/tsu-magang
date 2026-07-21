@@ -54,6 +54,10 @@ class DosenLogbookController extends Controller
             'status_validasi' => $request->status,
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Logbook berhasil divalidasi']);
+        }
+
         return back()->with('success', 'Logbook berhasil divalidasi');
     }
 
@@ -69,6 +73,10 @@ class DosenLogbookController extends Controller
             'status_validasi' => 'ditolak',
             'alasan' => $request->alasan
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Logbook ditolak']);
+        }
 
         return back()->with('success', 'Logbook ditolak');
     }
