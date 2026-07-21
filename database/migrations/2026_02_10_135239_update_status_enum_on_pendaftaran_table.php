@@ -7,19 +7,11 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::table('pendaftaran', function (Blueprint $table) {
-            $table->enum('status', ['menunggu', 'diterima', 'ditolak', 'lulus'])
-                ->default('menunggu')
-                ->change();
-        });
+        \Illuminate\Support\Facades\DB::statement("ALTER TABLE pendaftaran MODIFY COLUMN status ENUM('menunggu', 'diterima', 'ditolak', 'lulus') DEFAULT 'menunggu'");
     }
 
     public function down(): void
     {
-        Schema::table('pendaftaran', function (Blueprint $table) {
-            $table->enum('status', ['menunggu', 'diterima', 'ditolak'])
-                ->default('menunggu')
-                ->change();
-        });
+        \Illuminate\Support\Facades\DB::statement("ALTER TABLE pendaftaran MODIFY COLUMN status ENUM('menunggu', 'diterima', 'ditolak') DEFAULT 'menunggu'");
     }
 };
