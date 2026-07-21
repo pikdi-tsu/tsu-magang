@@ -8,18 +8,14 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('pendaftaran', function (Blueprint $table) {
-            $table->enum('status', ['menunggu', 'diterima', 'ditolak', 'lulus'])
-                ->default('menunggu')
-                ->change();
+            $table->string('nuptk')->nullable()->change();
         });
     }
 
     public function down(): void
     {
         Schema::table('pendaftaran', function (Blueprint $table) {
-            $table->enum('status', ['menunggu', 'diterima', 'ditolak'])
-                ->default('menunggu')
-                ->change();
+            $table->string('nuptk')->nullable(false)->change();
         });
     }
 };

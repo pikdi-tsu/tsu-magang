@@ -82,7 +82,7 @@ Route::middleware('auth')->group(function () {
         ->name('pendaftaran.store');
 
 
-    Route::get('/penilaian', fn() => view('mahasiswa.penilaian.penilaian'))->name('penilaian');
+    Route::get('/penilaian', [MahasiswaPenilaianController::class, 'index'])->name('penilaian');
     Route::post('/penilaian/store', [MahasiswaPenilaianController::class, 'store'])->name('penilaian.store.mhs');
     Route::get('/pembimbing', fn() => view('mahasiswa.pembimbing.pembimbing'))->name('pembimbing');
 
@@ -104,7 +104,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // ===================
-// ROUTE DOSEN 
+// ROUTE DOSEN
 // ===================
 Route::middleware(['auth', 'role:dosen'])->group(function () {
 
@@ -166,11 +166,10 @@ Route::middleware(['auth', 'role:dosen'])->group(function () {
     )
         ->name('dosen.penilaian.store');
 
-    Route::post(
-        '/dosen/penilaian/{nim}',
-        [DosenPenilaianController::class, 'store']
-    )
-        ->name('dosen.penilaian.store');
+    Route::get(
+        '/dosen/penilaian/{nim}/data',
+        [DosenPenilaianController::class, 'getPenilaianData']
+    )->name('dosen.penilaian.data');
 });
 
 
