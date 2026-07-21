@@ -18,7 +18,6 @@ return new class extends Migration
             $table->char('id_mitra', 8);
             $table->string('periode', 20);
             $table->integer('kuota')->nullable();
-            $table->string('lokasi_penempatan');
             $table->text('syarat')->nullable();
             $table->text('deskripsi_silabus')->nullable();
             $table->text('dampak_program')->nullable();
