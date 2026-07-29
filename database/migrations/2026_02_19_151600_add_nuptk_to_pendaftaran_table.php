@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('pendaftaran', function (Blueprint $table) {
             if (!Schema::hasColumn('pendaftaran', 'nuptk')) {
                 // Menambahkan kolom nuptk setelah kolom id_program
-                $table->string('nuptk')->nullable()->after('id_program');
+                $table->char('nuptk', 50)->nullable()->after('id_program');
             }
         });
     }
