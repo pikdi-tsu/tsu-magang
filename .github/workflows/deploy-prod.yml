@@ -1,12 +1,13 @@
 name: Deploy to DirectAdmin (Production)
+
 on:
   push:
     branches:
-      - main
+      - main # Otomatis deploy setiap push atau merge ke branch main
 
 jobs:
   web-deploy:
-    name: Fast Deploy to DirectAdmin
+    name: Fast Deploy to DirectAdmin via SSH Stream
     runs-on: ubuntu-latest
 
     steps:
@@ -16,54 +17,85 @@ jobs:
           fetch-depth: 2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          
+          node-version: '20'
+
       - name: Install NPM dependencies and build
         run: |
-          npm install
+          npm ci
           npm run build
 
-      - name: Sync Core files to DirectAdmin
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.3
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./
-          server-dir: /domains/magang.tsu.ac.id/tsu_magang_core/
-          exclude: |
-            **/.git*
-            **/.git*/**
-            .github/**
-            README.md
-            *.sqlite
-            phpunit.xml
-            vendor/**
-            node_modules/**
-            .idea/**
-            .vscode/**
-            .DS_Store
-            storage/logs/*.log
-            public/**
+      - name: Archive build and source files
+        run: |
+          tar -czf /tmp/core.tar.gz \
+            --warning=no-file-changed \
+            --exclude='./.git' \
+            --exclude='./.github' \
+            --exclude='./.claude' \
+            --exclude='./.idea' \
+            --exclude='./.vscode' \
+            --exclude='./tests' \
+            --exclude='./node_modules' \
+            --exclude='./vendor' \
+            --exclude='./public' \
+            --exclude='./scratch' \
+            --exclude='./storage/logs/*' \
+            --exclude='./storage/framework/cache/*' \
+            --exclude='./storage/framework/sessions/*' \
+            --exclude='./storage/framework/views/*' \
+            --exclude='./*.sqlite' \
+            --exclude='./*.sql' \
+            --exclude='./*.zip' \
+            --exclude='./*.rar' \
+            --exclude='./README.md' \
+            --exclude='./USER_MANUAL.md' \
+            --exclude='./CLAUDE.md' \
+            --exclude='./phpunit.xml' \
+            .
+          cd public && tar -czf /tmp/public.tar.gz \
+            --warning=no-file-changed \
+            --exclude='*.zip' \
+            --exclude='*.rar' \
+            --exclude='.git*' \
+            . && cd ..
+          mv /tmp/core.tar.gz ./core.tar.gz
+          mv /tmp/public.tar.gz ./public.tar.gz
 
-      - name: Sync Public files to DirectAdmin
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.3
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: public/
-          server-dir: /domains/magang.tsu.ac.id/public_html/
+      - name: Upload archives to DirectAdmin via SSH Stream
+        env:
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          SSH_CMD="ssh -p 22 -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=60 -o ServerAliveInterval=10 -o ServerAliveCountMax=60 -o TCPKeepAlive=yes -i ~/.ssh/deploy_key"
+
+          echo "Memastikan direktori tujuan ada di server..."
+          $SSH_CMD ${SSH_USER}@${SSH_HOST} "mkdir -p ~/domains/magang.tsu.ac.id"
+
+          echo "Mengunggah core.tar.gz (ukuran: $(du -h core.tar.gz | cut -f1))..."
+          $SSH_CMD ${SSH_USER}@${SSH_HOST} "cat > ~/domains/magang.tsu.ac.id/core.tar.gz" < core.tar.gz
+
+          echo "Mengunggah public.tar.gz (ukuran: $(du -h public.tar.gz | cut -f1))..."
+          $SSH_CMD ${SSH_USER}@${SSH_HOST} "cat > ~/domains/magang.tsu.ac.id/public.tar.gz" < public.tar.gz
+
+          echo "Upload selesai!"
+          rm -f ~/.ssh/deploy_key core.tar.gz public.tar.gz
 
       - name: Execute Server Scripts via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
           APP_NAME: ${{ secrets.APP_NAME }}
           APP_URL: ${{ secrets.APP_URL }}
+          ASSET_URL: ${{ secrets.ASSET_URL }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          DB_CONNECTION: ${{ secrets.DB_CONNECTION || 'mysql' }}
           DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_PORT: ${{ secrets.DB_PORT || '3306' }}
           DB_DATABASE: ${{ secrets.DB_DATABASE }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -73,33 +105,54 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           debug: true
-          envs: APP_NAME,APP_URL,DB_HOST,DB_PORT,DB_DATABASE,DB_USERNAME,DB_PASSWORD
+          envs: APP_NAME,APP_URL,ASSET_URL,FRONTEND_URL,DB_CONNECTION,DB_HOST,DB_PORT,DB_DATABASE,DB_USERNAME,DB_PASSWORD
           script: |
             set -e
-            
-            cd domains/magang.tsu.ac.id/public_html
-            # Adjust index.php paths to point to tsu_magang_core instead of going up one directory
-            # By default Laravel public/index.php has: __DIR__.'/../vendor/autoload.php'
-            # We change it to point to the core folder
+
+            # 0. Ekstrak arsip rilis ke direktori core dan public_html
+            mkdir -p ~/domains/magang.tsu.ac.id/tsu_magang_core
+            mkdir -p ~/domains/magang.tsu.ac.id/public_html
+
+            if [ -f ~/domains/magang.tsu.ac.id/core.tar.gz ]; then
+                tar -xzf ~/domains/magang.tsu.ac.id/core.tar.gz -C ~/domains/magang.tsu.ac.id/tsu_magang_core/
+                rm -f ~/domains/magang.tsu.ac.id/core.tar.gz
+            fi
+
+            if [ -f ~/domains/magang.tsu.ac.id/public.tar.gz ]; then
+                tar -xzf ~/domains/magang.tsu.ac.id/public.tar.gz -C ~/domains/magang.tsu.ac.id/public_html/
+                rm -f ~/domains/magang.tsu.ac.id/public.tar.gz
+            fi
+
+            # 1. Sesuaikan path index.php di public_html agar mengarah ke tsu_magang_core
+            cd ~/domains/magang.tsu.ac.id/public_html
             sed -i "s|__DIR__.'/../storage/|__DIR__.'/../tsu_magang_core/storage/|g" index.php
             sed -i "s|__DIR__.'/../vendor/|__DIR__.'/../tsu_magang_core/vendor/|g" index.php
             sed -i "s|__DIR__.'/../bootstrap/|__DIR__.'/../tsu_magang_core/bootstrap/|g" index.php
-            
-            cd ../tsu_magang_core
+
+            # 2. Masuk ke core untuk inisialisasi folder, dependensi & optimasi
+            cd ~/domains/magang.tsu.ac.id/tsu_magang_core
             mkdir -p storage/framework/{sessions,views,cache}
             mkdir -p bootstrap/cache
 
-            if [ ! -f .env ]; then cp .env.example .env; fi
-            touch database/database.sqlite
+            # Pastikan folder public di core mengarah ke public_html agar public_path() & asset path Laravel berfungsi
+            rm -rf public
+            ln -sfn ../public_html public
 
-            APP_NAME=$(echo "$APP_NAME" | tr -d '\r\n')
+            if [ ! -f .env ]; then cp .env.example .env; fi
+
+            # Bersihkan variabel Secrets dari karakter spasi/enter tersembunyi (CR/LF)
+            APP_NAME=$(echo "$APP_NAME" | tr -d '\r\n') # Spasi pada nama aplikasi diizinkan
             APP_URL=$(echo "$APP_URL" | tr -d '\r\n ')
+            ASSET_URL=$(echo "$ASSET_URL" | tr -d '\r\n ')
+            FRONTEND_URL=$(echo "$FRONTEND_URL" | tr -d '\r\n ')
+            DB_CONNECTION=$(echo "$DB_CONNECTION" | tr -d '\r\n ')
             DB_HOST=$(echo "$DB_HOST" | tr -d '\r\n ')
             DB_PORT=$(echo "$DB_PORT" | tr -d '\r\n ')
             DB_DATABASE=$(echo "$DB_DATABASE" | tr -d '\r\n ')
             DB_USERNAME=$(echo "$DB_USERNAME" | tr -d '\r\n ')
-            DB_PASSWORD=$(echo "$DB_PASSWORD" | tr -d '\r\n')
+            DB_PASSWORD=$(echo "$DB_PASSWORD" | tr -d '\r\n') # Jangan hapus spasi pada password
 
+            # Fungsi aman untuk update .env dengan tanda petik
             update_env() {
                 local key=$1
                 local val=$2
@@ -113,36 +166,50 @@ jobs:
                 fi
             }
 
+            # Set Config otomatis via Secrets
             update_env "APP_NAME" "$APP_NAME"
             update_env "APP_URL" "$APP_URL"
+            update_env "ASSET_URL" "$ASSET_URL"
+            update_env "FRONTEND_URL" "$FRONTEND_URL"
+            update_env "DB_CONNECTION" "$DB_CONNECTION"
             update_env "DB_HOST" "$DB_HOST"
             update_env "DB_PORT" "$DB_PORT"
             update_env "DB_DATABASE" "$DB_DATABASE"
             update_env "DB_USERNAME" "$DB_USERNAME"
             update_env "DB_PASSWORD" "$DB_PASSWORD"
-            
+
+
+            # Set Config environment dasar untuk production
             update_env "APP_ENV" "production"
             update_env "APP_DEBUG" "false"
             update_env "FORCE_HTTPS" "true"
             update_env "SESSION_SECURE_COOKIE" "true"
 
+            # Install dependensi PHP memakai composer.phar mandiri
             wget -O composer.phar https://getcomposer.org/download/latest-stable/composer.phar
             export COMPOSER_ALLOW_SUPERUSER=1
             php composer.phar install --ignore-platform-reqs --no-dev --optimize-autoloader
 
-            php artisan optimize:clear
+            # Bersihkan cache config saja agar key:generate membaca env terbaru
+            php artisan config:clear
 
+            # Generate APP_KEY jika belum valid
             if ! grep -q "^APP_KEY=base64:" .env; then
                 php artisan key:generate --force
             fi
 
-            php artisan optimize
-            php artisan view:cache
-            
-            # Membuat symlink storage/app/public ke public_html/storage
-            ln -sfn $(pwd)/storage/app/public ../public_html/storage
-
+            # 3. Jalankan Migrasi Database terlebih dahulu agar tabel (seperti cache & sessions) terbentuk
             php artisan migrate --force
 
+            # 4. Membuat symlink storage/app/public ke public_html/storage jika belum ada
+            ln -sfn $(pwd)/storage/app/public ../public_html/storage
+
+            # 5. Bersihkan dan Optimasi Framework
+            php artisan optimize:clear
+            php artisan optimize
+            php artisan view:cache
+
+            # 6. Memastikan hak akses folder cache dan log aman SETELAH semua file tergenerate
+            # Di DirectAdmin kita gunakan 755 agar tidak diblokir oleh suPHP/lsphp
             chmod -R 755 storage bootstrap/cache
             chmod 600 storage/*.key 2>/dev/null || true
