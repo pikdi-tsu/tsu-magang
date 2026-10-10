@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('pembimbing', function (Blueprint $table) {
             $table->id('id_pembimbing');
             $table->char('id_program', 8);
-            $table->char('nuptk', 16);
+            $table->char('nuptk', 50);
             $table->char('nim', 10);
             $table->foreign('nuptk')->references('nuptk')->on('dosen')->onDelete('cascade');
             $table->foreign('nim')->references('nim')->on('mahasiswa')->onDelete('cascade');

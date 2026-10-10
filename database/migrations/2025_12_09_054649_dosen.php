@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('dosen', function (Blueprint $table) {
-            $table->char('nuptk', 10)->primary();
+            $table->char('nuptk', 50)->primary();
             $table->string('kontak', 20)->nullable();
             $table->timestamps();
         });

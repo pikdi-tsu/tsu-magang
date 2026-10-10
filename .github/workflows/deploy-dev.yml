@@ -1,0 +1,114 @@
+name: Deploy to VPS (Development)
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  web-deploy:
+    name: Fast Deploy to VPS via Rsync
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install NPM dependencies and build
+        run: |
+          npm install
+          npm run build
+
+      - name: Sync files to VPS (Rsync over SSH)
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.DEV_SSH_HOST }}
+          REMOTE_USER: ${{ secrets.DEV_SSH_USERNAME }}
+          TARGET: /var/www/html/tsu_magang/
+          EXCLUDE: "/.git/, /.github/, /node_modules/, *.sqlite, /vendor/, /.vscode/, /.idea/, /storage/logs/"
+
+      - name: Execute Post-Deploy Scripts via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          APP_NAME: ${{ secrets.DEV_APP_NAME }}
+          APP_URL: ${{ secrets.DEV_APP_URL }}
+          DB_HOST: ${{ secrets.DEV_DB_HOST }}
+          DB_PORT: ${{ secrets.DEV_DB_PORT }}
+          DB_DATABASE: ${{ secrets.DEV_DB_DATABASE }}
+          DB_USERNAME: ${{ secrets.DEV_DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DEV_DB_PASSWORD }}
+        with:
+          host: ${{ secrets.DEV_SSH_HOST }}
+          username: ${{ secrets.DEV_SSH_USERNAME }}
+          key: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+          port: 22
+          envs: APP_NAME,APP_URL,DB_HOST,DB_PORT,DB_DATABASE,DB_USERNAME,DB_PASSWORD
+          script: |
+            set -e
+            cd /var/www/html/tsu_magang/
+
+            mkdir -p storage/framework/{sessions,views,cache}
+            mkdir -p bootstrap/cache
+
+            if [ ! -f .env ]; then cp .env.example .env; fi
+            touch database/database.sqlite
+
+            APP_NAME=$(echo "$APP_NAME" | tr -d '\r\n')
+            APP_URL=$(echo "$APP_URL" | tr -d '\r\n ')
+            DB_HOST=$(echo "$DB_HOST" | tr -d '\r\n ')
+            DB_PORT=$(echo "$DB_PORT" | tr -d '\r\n ')
+            DB_DATABASE=$(echo "$DB_DATABASE" | tr -d '\r\n ')
+            DB_USERNAME=$(echo "$DB_USERNAME" | tr -d '\r\n ')
+            DB_PASSWORD=$(echo "$DB_PASSWORD" | tr -d '\r\n')
+
+            update_env() {
+                local key=$1
+                local val=$2
+                if [ -n "$val" ]; then
+                    local escaped_val=$(echo "$val" | sed 's/"/\\"/g')
+                    if grep -q "^${key}=" .env; then
+                        sed -i "s|^${key}=.*|${key}=\"${escaped_val}\"|" .env
+                    else
+                        echo "${key}=\"${escaped_val}\"" >> .env
+                    fi
+                fi
+            }
+
+            update_env "APP_NAME" "$APP_NAME"
+            update_env "APP_URL" "$APP_URL"
+            update_env "DB_HOST" "$DB_HOST"
+            update_env "DB_PORT" "$DB_PORT"
+            update_env "DB_DATABASE" "$DB_DATABASE"
+            update_env "DB_USERNAME" "$DB_USERNAME"
+            update_env "DB_PASSWORD" "$DB_PASSWORD"
+            
+            update_env "APP_ENV" "local"
+            update_env "APP_DEBUG" "true"
+
+            wget -O composer.phar https://getcomposer.org/download/latest-stable/composer.phar
+            export COMPOSER_ALLOW_SUPERUSER=1
+            php composer.phar install --ignore-platform-reqs --no-interaction --prefer-dist --optimize-autoloader
+
+            php artisan optimize:clear
+
+            if ! grep -q "^APP_KEY=base64:" .env; then
+                php artisan key:generate --force
+            fi
+
+            php artisan optimize
+            php artisan view:cache
+            php artisan storage:link
+
+            php artisan migrate --force
+
+            chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+            chmod -R 775 storage bootstrap/cache
+            chmod 600 storage/*.key 2>/dev/null || true

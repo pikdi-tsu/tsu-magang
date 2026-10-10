@@ -20,3 +20,24 @@ yarn-error.log
 *.sqlite
 *.sqlite-journal
 .DS_Store
+
+# Database dumps
+*.sql
+*.sqlite
+
+# Compressed archives & backups
+*.zip
+*.tar.gz
+*.tar
+*.rar
+*.7z
+
+# Local development / Scratch testing
+/scratch
+scratch/
+
+# IDE / AI assistants local configs
+/.claude
+.claude/
+/.agents
+.agents/

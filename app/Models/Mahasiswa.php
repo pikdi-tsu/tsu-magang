@@ -40,7 +40,7 @@ class Mahasiswa extends Model
 
     public function logbook()
     {
-        return $this->hasMany(Logbook::class, 'nim', 'nim');
+        return $this->hasMany(LogBook::class, 'nim', 'nim');
     }
 
     public function laporan()
@@ -65,6 +65,11 @@ class Mahasiswa extends Model
     }
 
     public function konversi()
+    {
+        return $this->hasMany(KonversiMk::class, 'nim', 'nim');
+    }
+
+        public function konversiMk()
     {
         return $this->hasMany(KonversiMk::class, 'nim', 'nim');
     }

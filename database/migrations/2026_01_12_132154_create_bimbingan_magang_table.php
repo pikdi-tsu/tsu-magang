@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('bimbingan_magang', function (Blueprint $table) {
             $table->id();
 
-            $table->char('nuptk', 10);
+            $table->char('nuptk', 50);
             $table->string('nim', 10);
 
             $table->timestamps();
