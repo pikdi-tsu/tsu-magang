@@ -4,7 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Events\ConnectionEstablished;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 
 
@@ -30,10 +31,13 @@ class AppServiceProvider extends ServiceProvider
             ->numbers();
         });
 
-        // Pindahkan registrasi enum DB keluar dari closure Password::defaults
-        DB::connection()->getDoctrineSchemaManager()
-            ->getDatabasePlatform()
-            ->registerDoctrineTypeMapping('enum', 'string');
+        // Daftarkan mapping enum hanya saat koneksi DB benar-benar dibuat, agar perintah
+        // yang tidak butuh DB (mis. package:discover saat composer install) tidak ikut konek
+        Event::listen(ConnectionEstablished::class, function (ConnectionEstablished $event) {
+            $event->connection->getDoctrineSchemaManager()
+                ->getDatabasePlatform()
+                ->registerDoctrineTypeMapping('enum', 'string');
+        });
 
         // Force HTTPS if APP_URL is https or FORCE_HTTPS env is true
         if (env('FORCE_HTTPS', false) || str_contains(config('app.url'), 'https://')) {
